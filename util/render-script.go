@@ -10,14 +10,16 @@ type hook struct {
 	Version    string
 	CreatedAt  string
 	GoFishPath string
+	RootDir    string
 }
 
 // RenderScript generates a shell script to be used for the git hooks.
-func RenderScript(goFishPath string) (string, error) {
+func RenderScript(goFishPath, rootDir string) (string, error) {
 	hook := hook{
 		Version,
 		time.Now().Format("Jan 2, 2006 at 3:04pm (MST)"),
 		goFishPath,
+		rootDir,
 	}
 
 	tmpl, err := template.New("hook").Parse(hookTemplate)
@@ -44,6 +46,7 @@ const hookTemplate = `#! /bin/sh
 
 gofishPath="{{.GoFishPath}}"
 hookName="$(basename "$0")"
+rootDir="{{.RootDir}}"
 gitParams="$*"
 
 debug() {
@@ -60,7 +63,11 @@ if [ "$\{GOFISH_SKIP_HOOKS}" = "true" ] || [ "$\{GOFISH_SKIP_HOOKS}" = "1" ]; th
 fi
 
 if [ -f "$gofishPath" ]; then
-    "$gofishPath" run $hookName "$gitParams"
+	if [ "${GOFISH_DEBUG}" = "true" ] || [ "${GOFISH_DEBUG}" = "1" ]; then
+		"$gofishPath" -v -p "$rootDir" run $hookName "$gitParams"
+	else
+    	"$gofishPath" -p "$rootDir" run $hookName "$gitParams"
+	fi
 else
     echo "Can't find go-fish, skipping $hookName hook"
 fi
