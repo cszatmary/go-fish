@@ -13,7 +13,9 @@ import (
 var installCmd = &cobra.Command{
 	Use:   "install",
 	Short: "Install the git hooks",
-	Run:   runInstall,
+	Long: `Install will generate missing git hooks and recreate git hooks that were created by go-fish.
+By default it will not replace existing git hooks not created by go-fish.`,
+	Run: runInstall,
 }
 
 func init() {
