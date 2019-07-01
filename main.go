@@ -1,9 +1,13 @@
 package main
 
 import (
-	"fmt"
+	"github.com/cszatma/go-fish/cmd"
+	p "github.com/cszatma/printer"
 )
 
 func main() {
-	fmt.Println("🎣🎣🎣🎣🎣")
+	err := cmd.RootCmd.Execute()
+	if err != nil {
+		p.ExitFailure(err.Error())
+	}
 }
