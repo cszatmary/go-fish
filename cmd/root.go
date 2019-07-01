@@ -16,6 +16,7 @@ var RootCmd = &cobra.Command{
 }
 
 var path string
+var force bool
 
 func init() {
 	RootCmd.Version = util.Version

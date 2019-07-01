@@ -71,7 +71,7 @@ func deleteHook(path string) error {
 	return err
 }
 
-func createHook(name, path, script string) error {
+func createHook(name, path, script string, force bool) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		VerbosePrintf("Creating hook: %s\n", name)
 		return writeHook(path, script)
@@ -79,7 +79,7 @@ func createHook(name, path, script string) error {
 
 	if is, err := isGoFish(path); err != nil {
 		return err
-	} else if is {
+	} else if is || force {
 		VerbosePrintf("Updating existing hook: %s\n", name)
 		return writeHook(path, script)
 	}
@@ -88,7 +88,7 @@ func createHook(name, path, script string) error {
 	return nil
 }
 
-func removeHook(name, path string) error {
+func removeHook(name, path string, force bool) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		VerbosePrintf("Hook does not exists, skipping: %s\n", name)
 		return nil
@@ -96,7 +96,7 @@ func removeHook(name, path string) error {
 
 	if is, err := isGoFish(path); err != nil {
 		return err
-	} else if is {
+	} else if is || force {
 		VerbosePrintf("Removing hook: %s\n", name)
 		return deleteHook(path)
 	}
@@ -106,10 +106,10 @@ func removeHook(name, path string) error {
 }
 
 // CreateHooks creates each git hook.
-func CreateHooks(path, script string) error {
+func CreateHooks(path, script string, force bool) error {
 	for _, v := range hookList {
 		hookPath := path + "/" + v
-		err := createHook(v, hookPath, script)
+		err := createHook(v, hookPath, script, force)
 
 		if err != nil {
 			return err
@@ -120,10 +120,10 @@ func CreateHooks(path, script string) error {
 }
 
 // RemoveHooks removes each git hook.
-func RemoveHooks(path string) error {
+func RemoveHooks(path string, force bool) error {
 	for _, v := range hookList {
 		hookPath := path + "/" + v
-		err := removeHook(v, hookPath)
+		err := removeHook(v, hookPath, force)
 
 		if err != nil {
 			return err
