@@ -1,38 +1,32 @@
 package config
 
 import (
-	"github.com/spf13/viper"
+	"fmt"
+
+	"github.com/cszatma/go-fish/util"
 )
 
-var config *Config
+var config Config
 
 type Config struct {
-	SkipCI bool            `yaml:skipCI`
-	Hooks  map[string]Hook `yaml:hooks`
+	SkipCI bool            `yaml:"skipCI"`
+	Hooks  map[string]Hook `yaml:"hooks"`
 }
 
 type Hook struct {
-	Run   string `yaml:run`
-	Match string `yaml:match`
+	Run   string `yaml:"run"`
+	Match string `yaml:"match"`
 }
 
 func Init(path string) error {
-	config = &Config{true, nil}
-
-	viper.AddConfigPath(path)
-	viper.SetConfigName("go-fish")
-	viper.SetConfigType("yaml")
-	err := viper.ReadInConfig()
-
-	if err != nil {
-		return err
+	if !util.FileExists(path) {
+		return fmt.Errorf("%s does not exist", path)
 	}
 
-	err = viper.Unmarshal(config)
-
+	err := util.ReadYaml(path, &config)
 	return err
 }
 
 func All() *Config {
-	return config
+	return &config
 }
