@@ -9,8 +9,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const version = "0.1.0"
+
 var RootCmd = &cobra.Command{
 	Use:              "go-fish",
+	Version:          version,
 	Short:            "go-fish is a CLI for easily creating git hooks 🎣",
 	PersistentPreRun: setup,
 }
@@ -19,7 +22,6 @@ var path string
 var force bool
 
 func init() {
-	RootCmd.Version = util.Version
 	RootCmd.PersistentFlags().BoolVarP(&util.Verbose, "verbose", "v", false, "verbose output")
 	RootCmd.PersistentFlags().StringVarP(&path, "path", "p", ".", "path to config file")
 }
