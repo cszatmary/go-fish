@@ -61,7 +61,7 @@ func install(topLevelDir, gitDir, goFishPath string) {
 		}
 	}
 
-	script, err := util.RenderScript(goFishPath, topLevelDir)
+	script, err := util.RenderScript(goFishPath, topLevelDir, version)
 
 	if err != nil {
 		p.ExitFailure(p.Red("Error: Unable to generate hook script"))

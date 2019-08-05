@@ -14,9 +14,9 @@ type hook struct {
 }
 
 // RenderScript generates a shell script to be used for the git hooks.
-func RenderScript(goFishPath, rootDir string) (string, error) {
+func RenderScript(goFishPath, rootDir, version string) (string, error) {
 	hook := hook{
-		Version,
+		version,
 		time.Now().Format("Jan 2, 2006 at 3:04pm (MST)"),
 		goFishPath,
 		rootDir,
