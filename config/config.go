@@ -14,8 +14,7 @@ type Config struct {
 }
 
 type Hook struct {
-	Run   string `yaml:"run"`
-	Match string `yaml:"match"`
+	Run string `yaml:"run"`
 }
 
 func Init(path string) error {
