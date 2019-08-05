@@ -27,8 +27,9 @@ func init() {
 }
 
 func setup(cmd *cobra.Command, args []string) {
-	util.VerbosePrintf("Searching for config at path %s\n", path)
-	err := config.Init(path)
+	configPath := fmt.Sprintf("%s/go-fish.yml", path)
+	util.VerbosePrintf("Searching for config at path %s\n", configPath)
+	err := config.Init(configPath)
 
 	if err != nil {
 		fmt.Println(p.Yellow("Unable to read config file, using defaults"))
