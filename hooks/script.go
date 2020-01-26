@@ -1,4 +1,4 @@
-package util
+package hooks
 
 import (
 	"bytes"
@@ -7,19 +7,23 @@ import (
 )
 
 type hook struct {
+	ID         string
 	Version    string
 	CreatedAt  string
 	GoFishPath string
 	RootDir    string
 }
 
+const goFishID = "# Hook created by go-fish"
+
 // RenderScript generates a shell script to be used for the git hooks.
 func RenderScript(goFishPath, rootDir, version string) (string, error) {
 	hook := hook{
-		version,
-		time.Now().Format("Jan 2, 2006 at 3:04pm (MST)"),
-		goFishPath,
-		rootDir,
+		ID:         goFishID,
+		Version:    version,
+		CreatedAt:  time.Now().Format("Jan 2, 2006 at 3:04pm (MST)"),
+		GoFishPath: goFishPath,
+		RootDir:    rootDir,
 	}
 
 	tmpl, err := template.New("hook").Parse(hookTemplate)
@@ -40,7 +44,7 @@ func RenderScript(goFishPath, rootDir, version string) (string, error) {
 
 const hookTemplate = `#! /bin/sh
 
-# Hook created by go-fish
+{{.ID}}
 # Version: {{.Version}}
 # Created At: {{.CreatedAt}}
 

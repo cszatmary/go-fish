@@ -6,12 +6,17 @@ import (
 )
 
 // Verbose indicates if currently in verbose mode.
-var Verbose bool
+var verbose bool
+
+// SetVerboseMode toggles verbose mode on or off
+func SetVerboseMode(enabled bool) {
+	verbose = enabled
+}
 
 // VerbosePrintln formats using the default formats for
 // its operands and writes to standard output if in verbose mode.
 func VerbosePrintln(a ...interface{}) (n int, err error) {
-	if Verbose {
+	if verbose {
 		return fmt.Println(a...)
 	}
 
@@ -21,7 +26,7 @@ func VerbosePrintln(a ...interface{}) (n int, err error) {
 // VerboseFprintln formats using the default formats for
 // its operands and writes to w if in verbose mode.
 func VerboseFprintln(w io.Writer, a ...interface{}) (n int, err error) {
-	if Verbose {
+	if verbose {
 		return fmt.Fprintln(w, a...)
 	}
 
@@ -31,7 +36,7 @@ func VerboseFprintln(w io.Writer, a ...interface{}) (n int, err error) {
 // VerbosePrintf formats according to a format specifier and
 // writes to standard output if in verbose mode.
 func VerbosePrintf(format string, a ...interface{}) (n int, err error) {
-	if Verbose {
+	if verbose {
 		return fmt.Printf(format, a...)
 	}
 
