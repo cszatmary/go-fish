@@ -2,8 +2,11 @@ package config
 
 import (
 	"fmt"
+	"io"
 
-	"github.com/cszatma/go-fish/util"
+	"github.com/cszatma/go-fish/hooks"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 var config Config
@@ -17,13 +20,20 @@ type Hook struct {
 	Run string `yaml:"run"`
 }
 
-func Init(path string) error {
-	if !util.FileExists(path) {
-		return fmt.Errorf("%s does not exist", path)
+func Init(r io.Reader) error {
+	dec := yaml.NewDecoder(r)
+	err := dec.Decode(&config)
+	if err != nil {
+		errors.Wrap(err, "Failed to decode config file")
 	}
 
-	err := util.ReadYaml(path, &config)
-	return err
+	for hook, _ := range config.Hooks {
+		if !hooks.IsValidHook(hook) {
+			return errors.New(fmt.Sprintf("%s is not a valid git hook", hook))
+		}
+	}
+
+	return nil
 }
 
 func All() *Config {
