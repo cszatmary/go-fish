@@ -37,3 +37,18 @@ func GitDir() (string, error) {
 
 	return strings.TrimSpace(buf.String()), nil
 }
+
+// StagedFiles returns a slice of paths to staged files.
+func StagedFiles() ([]string, error) {
+	buf := &bytes.Buffer{}
+	args := []string{"diff", "--name-only", "--staged", "--diff-filter=ACMR"}
+	err := command.Exec("git", args, "git-diff", func(cmd *exec.Cmd) {
+		cmd.Stdout = buf
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get staged files")
+	}
+
+	files := strings.Split(buf.String(), "\n")
+	return files, nil
+}

@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/TouchBistro/goutils/color"
 	"github.com/TouchBistro/goutils/command"
 	"github.com/TouchBistro/goutils/fatal"
 	"github.com/cszatmary/go-fish/config"
 	"github.com/cszatmary/go-fish/git"
+	"github.com/cszatmary/go-fish/hooks"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -38,6 +40,24 @@ var runCmd = &cobra.Command{
 		}
 
 		fmt.Printf(color.Cyan("🎣 go-fish > %s\n"), hookName)
+
+		// If pre-commit, set STAGED_FILES env var
+		if hookName == hooks.PreCommit {
+			log.WithFields(log.Fields{
+				"hook": hookName,
+			}).Debug("Getting staged files")
+			stagedFiles, err := git.StagedFiles()
+			if err != nil {
+				fatal.ExitErr(err, "Failed to get staged files")
+			}
+
+			log.WithFields(log.Fields{
+				"hook":  hookName,
+				"files": stagedFiles,
+			}).Debug("Found staged files")
+			os.Setenv("STAGED_FILES", strings.Join(stagedFiles, "\n"))
+		}
+
 		log.Debugf("Running: %q", hook.Run)
 		err = command.Exec("sh", []string{"-c", hook.Run}, hookName, func(c *exec.Cmd) {
 			c.Dir = rootDir
