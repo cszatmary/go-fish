@@ -7,8 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cszatma/go-fish/util"
+	"github.com/TouchBistro/goutils/file"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 var hooks = map[string]bool{
@@ -33,6 +34,7 @@ var hooks = map[string]bool{
 	"sendemail-validate": true,
 }
 
+// IsValidHook checks if the given hook name is a valid Git hook.
 func IsValidHook(hook string) bool {
 	_, ok := hooks[hook]
 	return ok
@@ -46,81 +48,124 @@ func isGoFishHook(r io.Reader) bool {
 			return true
 		}
 	}
-
 	return false
 }
 
 func createHook(name, path, script string, force bool) error {
-	if util.FileOrDirExists(path) {
+	if !force && file.FileOrDirExists(path) {
 		f, err := os.Open(path)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to open hook file %s", path)
+			return errors.Wrapf(err, "failed to open hook file %s", path)
 		}
 		defer f.Close()
 
-		if !(isGoFishHook(f) || force) {
-			util.VerbosePrintf("Skipping existing user hook: %s\n", name)
+		if !isGoFishHook(f) {
+			log.WithFields(log.Fields{
+				"hook": name,
+			}).Debug("Skipping existing user hook")
 			return nil
 		}
 
-		util.VerbosePrintf("Updating existing hook: %s\n", name)
+		log.WithFields(log.Fields{
+			"hook": name,
+		}).Debug("Updating existing hook")
 	} else {
-		util.VerbosePrintf("Creating hook: %s\n", name)
+		log.WithFields(log.Fields{
+			"hook": name,
+		}).Debug("Creating hook")
 	}
 
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to open file %s", path)
+		return errors.Wrapf(err, "failed to open file %s", path)
 	}
 	defer f.Close()
 
 	_, err = f.WriteString(script)
-	f.Sync()
-	return errors.Wrapf(err, "Failed to write hook at %s", path)
-}
-
-func removeHook(name, path string, force bool) error {
-	if !util.FileOrDirExists(path) {
-		util.VerbosePrintf("Hook does not exists, skipping: %s\n", name)
-		return nil
-	}
-
-	f, err := os.Open(path)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to open hook file %s", path)
-	}
-	defer f.Close()
-
-	if !(isGoFishHook(f) || force) {
-		util.VerbosePrintf("Skipping user hook: %s\n", name)
-		return nil
+		return errors.Wrapf(err, "failed to write hook at %s", path)
 	}
 
-	util.VerbosePrintf("Removing hook: %s\n", name)
-	err = os.Remove(path)
-	return errors.Wrapf(err, "Failed to remove hook at %s", path)
+	err = f.Sync()
+	if err != nil {
+		return errors.Wrap(err, "failed to flush hook data to file")
+	}
+	return nil
 }
 
 // CreateHooks creates each git hook.
-func CreateHooks(path, script string, force bool) error {
+func CreateHooks(gitDir, version string, force bool) error {
+	hooksDir := filepath.Join(gitDir, "hooks")
+	if !file.FileOrDirExists(hooksDir) {
+		log.WithFields(log.Fields{
+			"hooksDir": hooksDir,
+		}).Debug("Hooks directory does not exist, creating...")
+		err := os.Mkdir(hooksDir, 0755)
+		if err != nil {
+			return errors.Wrapf(err, "failed to create directory %s", hooksDir)
+		}
+	}
+
+	goFishPath, err := os.Executable()
+	if err != nil {
+		return errors.Wrap(err, "failed to find path of go-fish")
+	}
+
+	log.Debug("Rendering git hook script...")
+	script, err := renderScript(goFishPath, version)
+	if err != nil {
+		return errors.Wrap(err, "failed to generate git hook script")
+	}
+
 	for hook := range hooks {
-		hookPath := filepath.Join(path, hook)
+		hookPath := filepath.Join(hooksDir, hook)
 		err := createHook(hook, hookPath, script, force)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to create hook %s", hook)
+			return errors.Wrapf(err, "failed to create hook %s", hook)
 		}
 	}
 
 	return nil
 }
 
+func removeHook(name, path string, force bool) error {
+	if !file.FileOrDirExists(path) {
+		log.WithFields(log.Fields{
+			"hook": name,
+		}).Debug("Hook does not exist, skipping")
+		return nil
+	}
+
+	if !force {
+		// Make sure it's a go fish hook before we remove it
+		f, err := os.Open(path)
+		if err != nil {
+			return errors.Wrapf(err, "failed to open hook file %s", path)
+		}
+		defer f.Close()
+
+		if !isGoFishHook(f) {
+			log.WithFields(log.Fields{
+				"hook": name,
+			}).Debug("Skipping user hook")
+			return nil
+		}
+	}
+
+	log.WithFields(log.Fields{
+		"hook": name,
+	}).Debug("Removing hook")
+	err := os.Remove(path)
+	return errors.Wrapf(err, "failed to remove hook file %s", path)
+}
+
 // RemoveHooks removes each git hook.
-func RemoveHooks(path string, force bool) error {
+func RemoveHooks(gitDir string, force bool) error {
 	for hook := range hooks {
-		hookPath := filepath.Join(path, hook)
+		hookPath := filepath.Join(gitDir, "hooks", hook)
 		err := removeHook(hook, hookPath, force)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to remove hook %s", hook)
+			return errors.Wrapf(err, "failed to remove hook %s", hook)
 		}
 	}
 

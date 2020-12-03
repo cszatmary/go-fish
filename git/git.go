@@ -1,18 +1,39 @@
 package git
 
 import (
+	"bytes"
+	"os/exec"
 	"strings"
 
-	"github.com/cszatma/go-fish/util"
+	"github.com/TouchBistro/goutils/command"
 	"github.com/pkg/errors"
 )
 
-func RootDir() (string, string, error) {
-	result, err := util.ExecOutput("git", "rev-parse", "--show-toplevel", "--absolute-git-dir")
+// RootDir returns the absolute paths to the root directory of the repo
+// and the .git directory.
+func RootDir() (string, error) {
+	buf := &bytes.Buffer{}
+	args := []string{"rev-parse", "--show-toplevel"}
+	err := command.Exec("git", args, "git-rev-parse", func(cmd *exec.Cmd) {
+		cmd.Stdout = buf
+	})
 	if err != nil {
-		return "", "", errors.Wrap(err, "Failed to find root dir of git repo")
+		return "", errors.Wrap(err, "failed to find path to root dir of git repo")
 	}
 
-	parts := strings.Split(result, "\n")
-	return parts[0], parts[1], nil
+	return strings.TrimSpace(buf.String()), nil
+}
+
+// GitDir returns the absolute path to the .git directory.
+func GitDir() (string, error) {
+	buf := &bytes.Buffer{}
+	args := []string{"rev-parse", "--absolute-git-dir"}
+	err := command.Exec("git", args, "git-rev-parse", func(cmd *exec.Cmd) {
+		cmd.Stdout = buf
+	})
+	if err != nil {
+		return "", errors.Wrap(err, "failed to find path to .git dir")
+	}
+
+	return strings.TrimSpace(buf.String()), nil
 }

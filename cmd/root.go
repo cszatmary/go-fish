@@ -1,51 +1,42 @@
 package cmd
 
 import (
-	"os"
-
-	"github.com/cszatma/go-fish/config"
-	"github.com/cszatma/go-fish/fatal"
-	"github.com/cszatma/go-fish/util"
+	"github.com/TouchBistro/goutils/fatal"
+	"github.com/cszatmary/go-fish/config"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 const version = "0.1.0"
 
-var (
-	configPath string
-	verbose    bool
-)
+type rootOptions struct {
+	verbose bool
+}
+
+var rootOpts rootOptions
 
 var rootCmd = &cobra.Command{
 	Use:     "go-fish",
 	Version: version,
 	Short:   "go-fish is a CLI for easily creating git hooks 🎣",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if rootOpts.verbose {
+			log.SetLevel(log.DebugLevel)
+		}
+		fatal.ShowStackTraces(rootOpts.verbose)
+		log.SetFormatter(&log.TextFormatter{
+			DisableTimestamp: true,
+		})
+
+		err := config.Init()
+		if err != nil {
+			fatal.ExitErr(err, "Failed to initialize config")
+		}
+	},
 }
 
 func init() {
-	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
-	rootCmd.PersistentFlags().StringVarP(&configPath, "path", "p", "go-fish.yml", "path to config file")
-
-	cobra.OnInitialize(func() {
-		util.SetVerboseMode(verbose)
-		fatal.ShowStackTraces(verbose)
-
-		util.VerbosePrintf("Reading config file %s\n", configPath)
-		if !util.FileOrDirExists(configPath) {
-			fatal.Exitf("No such file %s", configPath)
-		}
-
-		file, err := os.Open(configPath)
-		if err != nil {
-			fatal.ExitErrf(err, "Failed to open config file at path", configPath)
-		}
-		defer file.Close()
-
-		err = config.Init(file)
-		if err != nil {
-			fatal.ExitErr(err, "Failed reading config file.")
-		}
-	})
+	rootCmd.PersistentFlags().BoolVar(&rootOpts.verbose, "verbose", false, "verbose output")
 }
 
 func Execute() {
