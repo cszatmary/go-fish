@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/TouchBistro/goutils/color"
 	"github.com/TouchBistro/goutils/command"
@@ -40,9 +39,7 @@ var runCmd = &cobra.Command{
 
 		fmt.Printf(color.Cyan("🎣 go-fish > %s\n"), hookName)
 		log.Debugf("Running: %q", hook.Run)
-
-		hookArgs := strings.Fields(hook.Run)
-		err = command.Exec(hookArgs[0], hookArgs[1:], hookName, func(c *exec.Cmd) {
+		err = command.Exec("sh", []string{"-c", hook.Run}, hookName, func(c *exec.Cmd) {
 			c.Dir = rootDir
 			c.Stdout = os.Stdout
 			c.Stderr = os.Stderr
