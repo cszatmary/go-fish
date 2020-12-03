@@ -1,17 +1,21 @@
 package config
 
 import (
-	"fmt"
-	"io"
+	"os"
+	"path/filepath"
+	"strings"
 
-	"github.com/cszatma/go-fish/hooks"
+	"github.com/TouchBistro/goutils/file"
+	"github.com/cszatmary/go-fish/git"
+	"github.com/cszatmary/go-fish/hooks"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
-var config Config
+var conf config
 
-type Config struct {
+type config struct {
 	SkipCI bool            `yaml:"skipCI"`
 	Hooks  map[string]Hook `yaml:"hooks"`
 }
@@ -20,22 +24,52 @@ type Hook struct {
 	Run string `yaml:"run"`
 }
 
-func Init(r io.Reader) error {
-	dec := yaml.NewDecoder(r)
-	err := dec.Decode(&config)
+func SkipCI() bool {
+	return conf.SkipCI
+}
+
+func GetHook(name string) (Hook, bool) {
+	hook, ok := conf.Hooks[name]
+	return hook, ok
+}
+
+func Init() error {
+	// Config file must be in the root dir of the repo
+	rootDir, err := git.RootDir()
 	if err != nil {
-		errors.Wrap(err, "Failed to decode config file")
+		return err
 	}
 
-	for hook, _ := range config.Hooks {
-		if !hooks.IsValidHook(hook) {
-			return errors.New(fmt.Sprintf("%s is not a valid git hook", hook))
+	path := filepath.Join(rootDir, "go-fish.yml")
+	log.WithFields(log.Fields{
+		"file": path,
+	}).Debug("Reading config file")
+
+	if !file.FileOrDirExists(path) {
+		return errors.Errorf("config file %s does not exist", path)
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return errors.Wrapf(err, "failed to open config file %s", path)
+	}
+	defer f.Close()
+
+	err = yaml.NewDecoder(f).Decode(&conf)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse config file")
+	}
+
+	for hookName, hook := range conf.Hooks {
+		if !hooks.IsValidHook(hookName) {
+			return errors.Errorf("%s is not a valid git hook", hookName)
+		}
+
+		if strings.TrimSpace(hook.Run) == "" {
+			return errors.Errorf("hook: %s: run field cannot be empty", hookName)
 		}
 	}
 
+	log.Debug("Config loaded")
 	return nil
-}
-
-func All() *Config {
-	return &config
 }

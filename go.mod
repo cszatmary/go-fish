@@ -1,10 +1,12 @@
-module github.com/cszatma/go-fish
+module github.com/cszatmary/go-fish
 
-go 1.12
+go 1.15
 
 require (
-	github.com/cszatma/printer v0.1.0
+	github.com/TouchBistro/goutils v0.0.3
 	github.com/pkg/errors v0.9.1
-	github.com/spf13/cobra v0.0.5
-	gopkg.in/yaml.v2 v2.2.2
+	github.com/sirupsen/logrus v1.7.0
+	github.com/spf13/cobra v1.1.1
+	golang.org/x/sys v0.0.0-20201202213521-69691e467435 // indirect
+	gopkg.in/yaml.v2 v2.4.0
 )

@@ -3,13 +3,14 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strings"
+	"os/exec"
 
-	"github.com/cszatma/go-fish/config"
-	"github.com/cszatma/go-fish/fatal"
-	"github.com/cszatma/go-fish/git"
-	"github.com/cszatma/go-fish/util"
-	p "github.com/cszatma/printer"
+	"github.com/TouchBistro/goutils/color"
+	"github.com/TouchBistro/goutils/command"
+	"github.com/TouchBistro/goutils/fatal"
+	"github.com/cszatmary/go-fish/config"
+	"github.com/cszatmary/go-fish/git"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -19,35 +20,32 @@ var runCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		hookName := args[0]
-		util.VerbosePrintf("Running hook: %s\n", hookName)
+		log.WithFields(log.Fields{
+			"hook": hookName,
+		}).Debug("Running hook")
 
-		conf := config.All()
-		hook, exists := conf.Hooks[hookName]
-
+		hook, exists := config.GetHook(hookName)
 		if !exists {
-			util.VerbosePrintf("No action defined for %s in config, skipping\n", hookName)
+			log.WithFields(log.Fields{
+				"hook": hookName,
+			}).Debug("No action defined for hook in config, skipping")
 			return
 		}
 
-		util.VerbosePrintln("Finding root directory of git repo")
-		rootDir, _, err := git.RootDir()
+		rootDir, err := git.RootDir()
 		if err != nil {
-			fatal.ExitErr(err, "Unable to find git directory")
+			fatal.ExitErr(err, "Unable to find root directory of git repo")
 		}
 
-		fmt.Printf(p.Cyan("🎣 go-fish > %s\n"), hookName)
-
-		hookArgs := strings.Fields(hook.Run)
-		if len(hookArgs) == 0 {
-			fatal.ExitErr(err, "Run field cannot be empty")
-		}
-
-		fmt.Printf("Running: %s\n", hook.Run)
-		err = util.Exec(hookArgs[0], rootDir, hookArgs[1:]...)
+		fmt.Printf(color.Cyan("🎣 go-fish > %s\n"), hookName)
+		log.Debugf("Running: %q", hook.Run)
+		err = command.Exec("sh", []string{"-c", hook.Run}, hookName, func(c *exec.Cmd) {
+			c.Dir = rootDir
+			c.Stdout = os.Stdout
+			c.Stderr = os.Stderr
+		})
 		if err != nil {
-			fmt.Println("Hook failed with error:")
-			fmt.Println(err)
-			os.Exit(1)
+			fatal.ExitErrf(err, "Hook failed: %s", hookName)
 		}
 	},
 }

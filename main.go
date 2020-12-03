@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/cszatma/go-fish/cmd"
+	"github.com/cszatmary/go-fish/cmd"
 )
 
 func main() {
