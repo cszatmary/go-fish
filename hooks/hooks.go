@@ -12,11 +12,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const PreCommit = "pre-commit"
+
 var hooks = map[string]bool{
 	"applypatch-msg":     true,
 	"pre-applypatch":     true,
 	"post-applypatch":    true,
-	"pre-commit":         true,
+	PreCommit:            true,
 	"prepare-commit-msg": true,
 	"commit-msg":         true,
 	"post-commit":        true,
