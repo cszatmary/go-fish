@@ -38,8 +38,7 @@ var hooks = map[string]bool{
 
 // IsValidHook checks if the given hook name is a valid Git hook.
 func IsValidHook(hook string) bool {
-	_, ok := hooks[hook]
-	return ok
+	return hooks[hook]
 }
 
 func isGoFishHook(r io.Reader) bool {
@@ -170,6 +169,5 @@ func RemoveHooks(gitDir string, force bool) error {
 			return errors.Wrapf(err, "failed to remove hook %s", hook)
 		}
 	}
-
 	return nil
 }
