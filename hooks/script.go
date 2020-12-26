@@ -36,7 +36,6 @@ func renderScript(goFishPath, version string) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "failed to generate hook script")
 	}
-
 	return buf.String(), nil
 }
 

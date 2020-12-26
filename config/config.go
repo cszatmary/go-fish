@@ -41,13 +41,16 @@ func Init() error {
 	}
 
 	path := filepath.Join(rootDir, "go-fish.yml")
+	if !file.FileOrDirExists(path) {
+		log.WithFields(log.Fields{
+			"file": path,
+		}).Warn("Config file does not exist")
+		return nil
+	}
+
 	log.WithFields(log.Fields{
 		"file": path,
 	}).Debug("Reading config file")
-
-	if !file.FileOrDirExists(path) {
-		return errors.Errorf("config file %s does not exist", path)
-	}
 
 	f, err := os.Open(path)
 	if err != nil {
