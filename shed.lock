@@ -1,10 +1,10 @@
 {
   "tools": {
     "github.com/golangci/golangci-lint/cmd/golangci-lint": {
-      "version": "v1.33.0"
+      "version": "v1.39.0"
     },
     "golang.org/x/tools/cmd/goimports": {
-      "version": "v0.0.0-20201224043029-2b0845dc783e"
+      "version": "v0.1.0"
     }
   }
 }
