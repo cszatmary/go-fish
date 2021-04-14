@@ -4,8 +4,6 @@ COVERPKGS = ./...
 
 # Get all dependencies
 setup:
-	@echo Installing dependencies
-	@go mod tidy
 	@echo Installing tool dependencies
 	@shed install
 # Self-hoisted!
