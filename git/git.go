@@ -2,53 +2,54 @@ package git
 
 import (
 	"bytes"
+	"fmt"
 	"os/exec"
 	"strings"
-
-	"github.com/TouchBistro/goutils/command"
-	"github.com/pkg/errors"
 )
 
-// RootDir returns the absolute paths to the root directory of the repo
-// and the .git directory.
+// RootDir returns the absolute paths to the root directory of the repository.
 func RootDir() (string, error) {
-	buf := &bytes.Buffer{}
-	args := []string{"rev-parse", "--show-toplevel"}
-	err := command.Exec("git", args, "git-rev-parse", func(cmd *exec.Cmd) {
-		cmd.Stdout = buf
-	})
+	buf, err := execGit("rev-parse", "--show-toplevel")
 	if err != nil {
-		return "", errors.Wrap(err, "failed to find path to root dir of git repo")
+		return "", fmt.Errorf("failed to find path to root directory of git repositroy: %w", err)
 	}
-
 	return strings.TrimSpace(buf.String()), nil
 }
 
-// GitDir returns the absolute path to the .git directory.
-func GitDir() (string, error) {
-	buf := &bytes.Buffer{}
-	args := []string{"rev-parse", "--absolute-git-dir"}
-	err := command.Exec("git", args, "git-rev-parse", func(cmd *exec.Cmd) {
-		cmd.Stdout = buf
-	})
+func SetHooksPath(p string) error {
+	_, err := execGit("config", "core.hooksPath", p)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to find path to .git dir")
+		return fmt.Errorf("failed to set core.hookPath: %w", err)
 	}
-
-	return strings.TrimSpace(buf.String()), nil
+	return nil
 }
 
-// StagedFiles returns a slice of paths to staged files.
+func UnsetHooksPath() error {
+	_, err := execGit("config", "--unset", "core.hooksPath")
+	if err != nil {
+		return fmt.Errorf("failed to unset core.hookPath: %w", err)
+	}
+	return nil
+}
+
 func StagedFiles() ([]string, error) {
-	buf := &bytes.Buffer{}
-	args := []string{"diff", "--name-only", "--staged", "--diff-filter=ACMR"}
-	err := command.Exec("git", args, "git-diff", func(cmd *exec.Cmd) {
-		cmd.Stdout = buf
-	})
+	buf, err := execGit("diff", "--name-only", "--staged", "--diff-filter=ACMR")
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get staged files")
+		return nil, fmt.Errorf("failed to get staged files: %w", err)
 	}
+	return strings.Split(buf.String(), "\n"), nil
+}
 
-	files := strings.Split(buf.String(), "\n")
-	return files, nil
+func execGit(args ...string) (*bytes.Buffer, error) {
+	cmd := exec.Command("git", args...)
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	err := cmd.Run()
+	if err != nil {
+		argsStr := strings.Join(args, " ")
+		return nil, fmt.Errorf("failed to run 'git %s', stderr: %s, error: %w", argsStr, stderr.String(), err)
+	}
+	return stdout, nil
 }
