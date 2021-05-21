@@ -31,7 +31,7 @@ jobs:
           command: make build
       - run:
           name: Run tests
-          command: make test-ci
+          command: make test
 
 workflows:
   lint-build-test:
