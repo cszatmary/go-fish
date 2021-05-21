@@ -1,12 +1,13 @@
 package hooks
 
 import (
+	"bytes"
 	_ "embed"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
-
-	"github.com/cszatmary/go-fish/git"
+	"strings"
 )
 
 //go:embed go-fish.sh
@@ -15,7 +16,7 @@ var gofishScript []byte
 func Install() error {
 	dir, err := hooksDir()
 	if err != nil {
-		return fmt.Errorf("failed to install hooks: %w", err)
+		return fmt.Errorf("failed to get hooks directory: %w", err)
 	}
 	gofishDir := filepath.Join(dir, "go-fish")
 	if err := os.MkdirAll(gofishDir, 0o755); err != nil {
@@ -32,15 +33,15 @@ func Install() error {
 	if err := os.WriteFile(scriptPath, gofishScript, 0o755); err != nil {
 		return fmt.Errorf("failed to create %s: %w", scriptPath, err)
 	}
-	if err := git.SetHooksPath(dir); err != nil {
-		return fmt.Errorf("failed to install hooks: %w", err)
+	if _, err := execGit("config", "core.hooksPath", dir); err != nil {
+		return fmt.Errorf("failed to set core.hookPath: %w", err)
 	}
 	return nil
 }
 
 func Uninstall() error {
-	if err := git.UnsetHooksPath(); err != nil {
-		return fmt.Errorf("failed to uninstall git hooks: %w", err)
+	if _, err := execGit("config", "--unset", "core.hooksPath"); err != nil {
+		return fmt.Errorf("failed to unset core.hookPath: %w", err)
 	}
 	return nil
 }
@@ -53,7 +54,7 @@ func Create(name string) error {
 	}
 	dir, err := hooksDir()
 	if err != nil {
-		return fmt.Errorf("failed to create hook %s: %w", name, err)
+		return fmt.Errorf("failed to get hooks directory: %w", err)
 	}
 	fp := filepath.Join(dir, name)
 	const tmpl = `#!/bin/sh
@@ -70,11 +71,24 @@ func Create(name string) error {
 
 // hooksDir returns the path to the .hooks directory in the root of the git repo.
 func hooksDir() (string, error) {
-	rootDir, err := git.RootDir()
+	buf, err := execGit("rev-parse", "--show-toplevel")
 	if err != nil {
-		return "", fmt.Errorf("failed to get hooks directory: %w", err)
+		return "", fmt.Errorf("failed to find path to root directory of git repositroy: %w", err)
 	}
+	rootDir := strings.TrimSpace(buf.String())
 	return filepath.Join(rootDir, ".hooks"), nil
+}
+
+func execGit(args ...string) (*bytes.Buffer, error) {
+	var stdout, stderr bytes.Buffer
+	cmd := exec.Command("git", args...)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		argsStr := strings.Join(args, " ")
+		return nil, fmt.Errorf("failed to run 'git %s', stderr: %s, error: %w", argsStr, stderr.String(), err)
+	}
+	return &stdout, nil
 }
 
 // List of hooks supported by git, used for validation
