@@ -11,7 +11,7 @@ import (
 	"github.com/cszatmary/go-fish/hooks"
 )
 
-var version = "master"
+var version = "source"
 
 func main() {
 	// Main flags

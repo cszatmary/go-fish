@@ -6,10 +6,10 @@ go-fish is intended to be used with Go projects. However, it can theoretically b
 
 ## Installation
 
-The recommended way to install go-fish is with [shed](https://github.com/getshiphub/shed).
+The recommended way to install go-fish is with [shed](https://github.com/cszatmary/shed).
 
 ```
-shed install github.com/cszatmary/go-fish
+shed get github.com/cszatmary/go-fish
 ```
 
 ## Usage
